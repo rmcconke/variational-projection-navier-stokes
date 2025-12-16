@@ -51,7 +51,7 @@ def construct_A(grid):
     # Interior
     _fill_interior(A, grid['indices']['interior'], P, inv_dx, inv_dy)
     
-    return A#jnp.array(A)
+    return A
 
 
 def _fill_corners(A, corners, P, inv_dx, inv_dy):
