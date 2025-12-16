@@ -1,0 +1,72 @@
+"""
+Module 1: Grid setup and boundary index calculations for lid-driven cavity flow.
+
+Grid layout (0-based indexing):
+- P points along width (x-direction)
+- Q points along height (y-direction)
+- Points numbered in column-major order: m = j*P + i
+  where i = column (0 to P-1), j = row (0 to Q-1)
+"""
+
+import numpy as np
+
+def create_grid_indices(P, Q):
+    """
+    Create all boundary and interior point index sets.
+    
+    Parameters
+    ----------
+    P : int
+        Number of grid points along width (x-direction)
+    Q : int
+        Number of grid points along height (y-direction)
+    
+    Returns
+    -------
+    dict with keys:
+        'corners': ndarray of 4 corner indices [BL, BR, TL, TR]
+        'left_b': ndarray of left boundary indices (excluding corners)
+        'right_b': ndarray of right boundary indices (excluding corners)
+        'bottom_b': ndarray of bottom boundary indices (excluding corners)
+        'top_b': ndarray of top boundary indices (excluding corners)
+        'interior': ndarray of interior point indices
+        'P': grid width
+        'Q': grid height
+    """
+    # Corners: bottom-left, bottom-right, top-left, top-right
+    corners = np.array([
+        0,              # bottom-left
+        P - 1,          # bottom-right
+        P * (Q - 1),    # top-left
+        P * Q - 1       # top-right
+    ], dtype=np.int32)
+    
+    # Left boundary: column 0, rows 1 to Q-2
+    left_b = np.array([j * P for j in range(1, Q - 1)], dtype=np.int32)
+    
+    # Right boundary: column P-1, rows 1 to Q-2
+    right_b = np.array([j * P + (P - 1) for j in range(1, Q - 1)], dtype=np.int32)
+    
+    # Bottom boundary: row 0, columns 1 to P-2
+    bottom_b = np.array([i for i in range(1, P - 1)], dtype=np.int32)
+    
+    # Top boundary: row Q-1, columns 1 to P-2
+    top_b = np.array([P * (Q - 1) + i for i in range(1, P - 1)], dtype=np.int32)
+    
+    # Interior points: rows 1 to Q-2, columns 1 to P-2
+    interior = np.array([
+        j * P + i 
+        for j in range(1, Q - 1) 
+        for i in range(1, P - 1)
+    ], dtype=np.int32)
+    
+    return {
+        'corners': corners,
+        'left_b': left_b,
+        'right_b': right_b,
+        'bottom_b': bottom_b,
+        'top_b': top_b,
+        'interior': interior,
+        'P': P,
+        'Q': Q
+    }
