@@ -9,29 +9,25 @@ Grid layout (0-based indexing):
 """
 
 import numpy as np
+import jax.numpy as jnp
+
+
+def construct_grid(P, Q, W=1.0, H=1.0):
+    dx = W / (P + 1)
+    dy = H / (Q + 1)
+    grid_indices = create_grid_indices(P, Q)
+    return {
+        'P': P,
+        'Q': Q,
+        'dx': dx,
+        'dy': dy,
+        'indices': grid_indices 
+        }
 
 def create_grid_indices(P, Q):
     """
     Create all boundary and interior point index sets.
-    
-    Parameters
-    ----------
-    P : int
-        Number of grid points along width (x-direction)
-    Q : int
-        Number of grid points along height (y-direction)
-    
-    Returns
-    -------
-    dict with keys:
-        'corners': ndarray of 4 corner indices [BL, BR, TL, TR]
-        'left_b': ndarray of left boundary indices (excluding corners)
-        'right_b': ndarray of right boundary indices (excluding corners)
-        'bottom_b': ndarray of bottom boundary indices (excluding corners)
-        'top_b': ndarray of top boundary indices (excluding corners)
-        'interior': ndarray of interior point indices
-        'P': grid width
-        'Q': grid height
+    Only used for one-time setup of the A matrix.
     """
     # Corners: bottom-left, bottom-right, top-left, top-right
     corners = np.array([
@@ -67,6 +63,4 @@ def create_grid_indices(P, Q):
         'bottom_b': bottom_b,
         'top_b': top_b,
         'interior': interior,
-        'P': P,
-        'Q': Q
     }

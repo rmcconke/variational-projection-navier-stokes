@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 sys.path.insert(0, '../src')
-from grid_setup import create_grid_indices
+from grid_setup import construct_grid
 from construct_A import construct_A
 from construct_C import construct_C
 from optimal_Udot import compute_projection_matrices, compute_optimal_Udot, compute_M_neg_sqrt
@@ -29,15 +29,15 @@ def test_same_fields_come_out():
     dy = H / (Q + 1)
     dt = CFL_max * min(dx, dy) / U_lid
 
-    grid = create_grid_indices(P, Q)
-    A = construct_A(grid, dx, dy)
-    M_neg_sqrt = compute_M_neg_sqrt(P, Q, rho, dx, dy)
+    grid = construct_grid(P, Q, W, H)
+    A = construct_A(grid)
+    M_neg_sqrt = compute_M_neg_sqrt(grid, rho)
     P_proj, N_proj = compute_projection_matrices(A, M_neg_sqrt)
 
     U = np.zeros(2 * P * Q)  # Initial velocity
 
     for step in range(1, n_steps + 1):
-        C = construct_C(grid, dx, dy, U, rho, nu, U_lid)
+        C = construct_C(grid, U, rho, nu, U_lid)
         
         U_dot, _ = compute_optimal_Udot(M_neg_sqrt, C, P_proj, N_proj)
         

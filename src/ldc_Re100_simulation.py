@@ -1,6 +1,6 @@
 import numpy as np
 import plotext as plt
-from grid_setup import create_grid_indices
+from grid_setup import construct_grid
 from construct_A import construct_A
 from construct_C import construct_C
 from optimal_Udot import compute_projection_matrices, compute_optimal_Udot, compute_M_neg_sqrt
@@ -17,19 +17,17 @@ CFL_max = 0.1
 conv_tol = 1e-8
 
 log_every = 10  # Update plot every N steps
-dx = W / (P + 1)
-dy = H / (Q + 1)
-dt = CFL_max * min(dx, dy) / U_lid
 
 if __name__ == "__main__":
+    grid = construct_grid(P, Q, W, H)
+    dt = CFL_max * min(grid['dx'], grid['dy']) / U_lid
     print(f"CFL max: {CFL_max:.6f}")
-    print(f"Pe: {U_lid * dx / nu:.6f}")
+    print(f"Pe: {U_lid * grid['dx'] / nu:.6f}")
     print(f"Re: {rho * U_lid * W / mu:.6f}")
     print(f"dt: {dt:.6f}")
 
-    grid = create_grid_indices(P, Q)
-    A = construct_A(grid, dx, dy)
-    M_neg_sqrt = compute_M_neg_sqrt(P, Q, rho, dx, dy)
+    A = construct_A(grid)
+    M_neg_sqrt = compute_M_neg_sqrt(grid, rho)
 
     P_proj, N_proj = compute_projection_matrices(A, M_neg_sqrt)
 
@@ -38,7 +36,7 @@ if __name__ == "__main__":
 
     for step in range(1, n_steps + 1):
         # Compute free acceleration terms
-        C = construct_C(grid, dx, dy, U, rho, nu, U_lid)
+        C = construct_C(grid, U, rho, nu, U_lid)
         
         # Compute optimal divergence-free acceleration
         U_dot, S_star = compute_optimal_Udot(M_neg_sqrt, C, P_proj, N_proj)

@@ -17,71 +17,44 @@ The discretization uses central differences:
 
 import numpy as np
 
-
-def construct_C(grid, dx, dy, U, rho, nu, U_lid):
-    """
-    Construct the C vector from current velocity field.
-    
-    Parameters
-    ----------
-    grid : dict
-        Grid indices from create_grid_indices()
-    dx : float
-        Grid spacing in x-direction
-    dy : float
-        Grid spacing in y-direction
-    U : ndarray
-        Current velocity field, shape (2*P*Q,)
-        U[2*m] = u at point m, U[2*m+1] = v at point m
-    rho : float
-        Fluid density
-    nu : float
-        Kinematic viscosity
-    U_lid : float
-        Lid velocity (top boundary condition)
-    
-    Returns
-    -------
-    C : ndarray
-        Free acceleration vector, shape (2*P*Q,)
-    """
+def construct_C(grid, U, rho, nu, U_lid):
     P = grid['P']
     Q = grid['Q']
+    dx = grid['dx']
+    dy = grid['dy']
     
-    C = np.zeros(2 * P * Q)
     dm = rho * dx * dy
     
-    # Corners
-    _fill_corners_C(C, grid['corners'], P, dx, dy, U, dm, nu, U_lid)
+    # Reshape to (Q, P, 2)
+    U_grid = U.reshape(Q, P, 2)
+    u = U_grid[:, :, 0]
+    v = U_grid[:, :, 1]
     
-    # Boundaries
-    _fill_left_C(C, grid['left_b'], P, dx, dy, U, dm, nu)
-    _fill_right_C(C, grid['right_b'], P, dx, dy, U, dm, nu)
-    _fill_bottom_C(C, grid['bottom_b'], P, dx, dy, U, dm, nu)
-    _fill_top_C(C, grid['top_b'], P, dx, dy, U, dm, nu, U_lid)
+    # Pad with boundary conditions
+    u_padded = np.pad(u, ((1, 1), (1, 1)), mode='constant', constant_values=0.0)
+    v_padded = np.pad(v, ((1, 1), (1, 1)), mode='constant', constant_values=0.0)
     
-    # Interior
-    _fill_interior_C(C, grid['interior'], P, dx, dy, U, dm, nu)
+    # Fix top boundary: u = U_lid
+    u_padded[-1, 1:-1] = U_lid
     
-    return C
-
-
-def _compute_C_point(u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu):
-    """
-    Compute C for a single grid point.
+    # Extract current points and neighbors
+    u0 = u_padded[1:-1, 1:-1]
+    u1 = u_padded[1:-1, :-2]    # left
+    u2 = u_padded[1:-1, 2:]     # right
+    ua = u_padded[:-2, 1:-1]    # below
+    ub = u_padded[2:, 1:-1]     # above
     
-    Neighbor notation:
-        u1, v1 = left neighbor
-        u2, v2 = right neighbor
-        ua, va = below neighbor
-        ub, vb = above neighbor
-        u0, v0 = current point
-    """
-    # Convective terms
+    v0 = v_padded[1:-1, 1:-1]
+    v1 = v_padded[1:-1, :-2]
+    v2 = v_padded[1:-1, 2:]
+    va = v_padded[:-2, 1:-1]
+    vb = v_padded[2:, 1:-1]
+    
+    # Convective terms (all points at once)
     A = 0.5 * u0 * (u2 - u1) / dx + 0.5 * v0 * (ub - ua) / dy
     B = 0.5 * u0 * (v2 - v1) / dx + 0.5 * v0 * (vb - va) / dy
     
-    # Viscous terms (Laplacian)
+    # Viscous terms
     alpha = nu * ((u2 - 2*u0 + u1) / dx**2 + (ub - 2*u0 + ua) / dy**2)
     beta = nu * ((v2 - 2*v0 + v1) / dx**2 + (vb - 2*v0 + va) / dy**2)
     
@@ -89,128 +62,8 @@ def _compute_C_point(u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu):
     C_u = dm * (A - alpha)
     C_v = dm * (B - beta)
     
-    return C_u, C_v
-
-
-def _get_velocities(U, m):
-    """Get u, v at point m."""
-    return U[2*m], U[2*m + 1]
-
-
-def _fill_interior_C(C, interior, P, dx, dy, U, dm, nu):
-    """Fill C for interior points (all 4 neighbors exist)."""
-    for m in interior:
-        u0, v0 = _get_velocities(U, m)
-        u1, v1 = _get_velocities(U, m - 1)      # left
-        u2, v2 = _get_velocities(U, m + 1)      # right
-        ua, va = _get_velocities(U, m - P)      # below
-        ub, vb = _get_velocities(U, m + P)      # above
-        
-        C[2*m], C[2*m + 1] = _compute_C_point(
-            u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-        )
-
-
-def _fill_left_C(C, left_b, P, dx, dy, U, dm, nu):
-    """Fill C for left boundary (u1=0, v1=0 at wall)."""
-    for m in left_b:
-        u0, v0 = _get_velocities(U, m)
-        u1, v1 = 0.0, 0.0                       # wall
-        u2, v2 = _get_velocities(U, m + 1)      # right
-        ua, va = _get_velocities(U, m - P)      # below
-        ub, vb = _get_velocities(U, m + P)      # above
-        
-        C[2*m], C[2*m + 1] = _compute_C_point(
-            u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-        )
-
-
-def _fill_right_C(C, right_b, P, dx, dy, U, dm, nu):
-    """Fill C for right boundary (u2=0, v2=0 at wall)."""
-    for m in right_b:
-        u0, v0 = _get_velocities(U, m)
-        u1, v1 = _get_velocities(U, m - 1)      # left
-        u2, v2 = 0.0, 0.0                       # wall
-        ua, va = _get_velocities(U, m - P)      # below
-        ub, vb = _get_velocities(U, m + P)      # above
-        
-        C[2*m], C[2*m + 1] = _compute_C_point(
-            u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-        )
-
-
-def _fill_bottom_C(C, bottom_b, P, dx, dy, U, dm, nu):
-    """Fill C for bottom boundary (ua=0, va=0 at wall)."""
-    for m in bottom_b:
-        u0, v0 = _get_velocities(U, m)
-        u1, v1 = _get_velocities(U, m - 1)      # left
-        u2, v2 = _get_velocities(U, m + 1)      # right
-        ua, va = 0.0, 0.0                       # wall
-        ub, vb = _get_velocities(U, m + P)      # above
-        
-        C[2*m], C[2*m + 1] = _compute_C_point(
-            u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-        )
-
-
-def _fill_top_C(C, top_b, P, dx, dy, U, dm, nu, U_lid):
-    """Fill C for top boundary (ub=U_lid, vb=0 at lid)."""
-    for m in top_b:
-        u0, v0 = _get_velocities(U, m)
-        u1, v1 = _get_velocities(U, m - 1)      # left
-        u2, v2 = _get_velocities(U, m + 1)      # right
-        ua, va = _get_velocities(U, m - P)      # below
-        ub, vb = U_lid, 0.0                     # lid
-        
-        C[2*m], C[2*m + 1] = _compute_C_point(
-            u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-        )
-
-
-def _fill_corners_C(C, corners, P, dx, dy, U, dm, nu, U_lid):
-    """Fill C for corner points."""
-    bl, br, tl, tr = corners
+    # Stack and flatten back to interleaved format
+    C_grid = np.stack([C_u, C_v], axis=-1)  # shape (Q, P, 2)
+    C = C_grid.reshape(-1)                   # shape (2*P*Q,)
     
-    # Bottom-left: left=wall, below=wall
-    m = bl
-    u0, v0 = _get_velocities(U, m)
-    u1, v1 = 0.0, 0.0                       # wall (left)
-    u2, v2 = _get_velocities(U, m + 1)      # right
-    ua, va = 0.0, 0.0                       # wall (below)
-    ub, vb = _get_velocities(U, m + P)      # above
-    C[2*m], C[2*m + 1] = _compute_C_point(
-        u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-    )
-    
-    # Bottom-right: right=wall, below=wall
-    m = br
-    u0, v0 = _get_velocities(U, m)
-    u1, v1 = _get_velocities(U, m - 1)      # left
-    u2, v2 = 0.0, 0.0                       # wall (right)
-    ua, va = 0.0, 0.0                       # wall (below)
-    ub, vb = _get_velocities(U, m + P)      # above
-    C[2*m], C[2*m + 1] = _compute_C_point(
-        u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-    )
-    
-    # Top-left: left=wall, above=lid
-    m = tl
-    u0, v0 = _get_velocities(U, m)
-    u1, v1 = 0.0, 0.0                       # wall (left)
-    u2, v2 = _get_velocities(U, m + 1)      # right
-    ua, va = _get_velocities(U, m - P)      # below
-    ub, vb = U_lid, 0.0                     # lid (above)
-    C[2*m], C[2*m + 1] = _compute_C_point(
-        u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-    )
-    
-    # Top-right: right=wall, above=lid
-    m = tr
-    u0, v0 = _get_velocities(U, m)
-    u1, v1 = _get_velocities(U, m - 1)      # left
-    u2, v2 = 0.0, 0.0                       # wall (right)
-    ua, va = _get_velocities(U, m - P)      # below
-    ub, vb = U_lid, 0.0                     # lid (above)
-    C[2*m], C[2*m + 1] = _compute_C_point(
-        u0, v0, u1, u2, ua, ub, v1, v2, va, vb, dx, dy, dm, nu
-    )
+    return C

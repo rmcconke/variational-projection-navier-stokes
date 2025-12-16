@@ -102,7 +102,7 @@ def compute_optimal_Udot(M_neg_sqrt, C, P, N):
     return U_dot, S_star
 
 
-def compute_M_neg_sqrt(P, Q, rho, dx, dy):
+def compute_M_neg_sqrt(grid, rho):
     """
     Compute M^{-1/2} as a 1D array (diagonal elements).
     
@@ -126,6 +126,6 @@ def compute_M_neg_sqrt(P, Q, rho, dx, dy):
     M_neg_sqrt : ndarray
         Diagonal of M^{-1/2}, shape (2*P*Q,)
     """
-    dm = rho * dx * dy
+    dm = rho * grid['dx'] * grid['dy']
     m_neg_sqrt_val = dm ** (-0.5)
-    return np.full(2 * P * Q, m_neg_sqrt_val)
+    return np.full(2 * grid['P'] * grid['Q'], m_neg_sqrt_val)
