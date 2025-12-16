@@ -1,6 +1,5 @@
 # Python implementation of Variational Navier-Stokes Solver
-Based on the paper by Taha and Anand: [Variational Projection of Navier-Stokes: Fluid Mechanics as a Quadratic Programming Problem
-](https://arxiv.org/abs/2511.03896). Adapted from their provided MATLAB source code.
+Based on the paper by Taha and Anand: [Variational Projection of Navier-Stokes: Fluid Mechanics as a Quadratic Programming Problem](https://arxiv.org/abs/2511.03896). Adapted from their provided MATLAB source code.
 
 # Current state
 Code is validated for Re=100 lid driven cavity (see `results/` folder). 
