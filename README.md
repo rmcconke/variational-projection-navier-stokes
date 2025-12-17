@@ -2,7 +2,7 @@
 Based on the paper by Taha and Anand: [Variational Projection of Navier-Stokes: Fluid Mechanics as a Quadratic Programming Problem](https://arxiv.org/abs/2511.03896). Adapted from their provided MATLAB source code.
 
 # Current state
-Code is validated for Re=100 lid driven cavity (see `results/` folder). 
+Code is validated for Re=100 lid driven cavity (see `results/` folder). The code uses JAX.
 
 ```
 # Runs simulation on 50x50 grid (takes a couple minutes)
@@ -19,6 +19,5 @@ Hard-coded:
 - Lid driven cavity boundary conditions
 
 # To-do's:
-- Change to jax implementation for GPU acceleration
 - Switch to generic BC's to allow different flows to be simulated
 - Allow other numerical schemes
