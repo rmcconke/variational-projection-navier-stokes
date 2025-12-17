@@ -34,7 +34,8 @@ CFL_max = 0.1
 
 def test_jax_vs_numpy():
     """
-    Test that JAX is faster than NumPy, and returns the same results.
+    Test that JAX is faster than NumPy, and returns the same results. 
+    Note: this is with FP64 JAX, not FP32.
     The numpy implementation here is from the last main branch that only used numpy.
     It is vectorized, and uses sparse matrix multiplication.
     I ran this test in a loop 10x:

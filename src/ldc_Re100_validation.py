@@ -83,4 +83,4 @@ ax4.set_ylim(y.min(), y.max())
 
 plt.tight_layout()
 plt.savefig('results/ldc_Re100_validation.png', dpi=150)
-print("\nFigure saved to ldc_results.png")
+print("\nFigure saved to results/ldc_Re100_validation.png")
