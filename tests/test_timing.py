@@ -61,8 +61,8 @@ print(f"scipy.linalg.pinv(A_tilde): {stats['mean']:.4f}s ± {stats['std']:.4f}s"
 P_proj, N_proj = compute_projection_matrices(A, M_neg_sqrt)
 stats = timer(lambda: compute_projection_matrices(A, M_neg_sqrt), repeat=1)
 print(f"compute_projection_matrices: {stats['mean']:.4f}s ± {stats['std']:.4f}s")
-print(f"sparse P_proj size: {sparse_size(P_proj)/1E6} Mbytes")
-print(f"sparse N_proj size: {sparse_size(N_proj)/1E6} Mbytes")
+#print(f"sparse P_proj size: {sparse_size(P_proj)/1E6} Mbytes")
+#print(f"sparse N_proj size: {sparse_size(N_proj)/1E6} Mbytes")
 
 P_proj_dense, N_proj_dense = compute_projection_matrices(A, M_neg_sqrt, sparse=False)
 print(f"dense P_proj size: {P_proj_dense.nbytes/1E6} Mbytes")
@@ -100,11 +100,12 @@ print(f'U shape: {U.shape}')
 
 
 from test_construct_C import construct_C_original
-grid['indices']['P'] = grid['P']
-grid['indices']['Q'] = grid['Q']
-grid['indices']['dx'] = grid['dx']
-grid['indices']['dy'] = grid['dy']
-stats = timer(lambda: construct_C_original(grid['indices'], grid['dx'], grid['dy'], U, rho, nu, U_lid), repeat=10)
+indices = grid.indices()
+indices['P'] = grid.P
+indices['Q'] = grid.Q
+indices['dx'] = grid.dx
+indices['dy'] = grid.dy
+stats = timer(lambda: construct_C_original(indices, grid.dx, grid.dy, U, rho, nu, U_lid), repeat=10)
 print(f"construct_C_original: {stats['mean']:.4f}s ± {stats['std']:.4f}s")
 
 from construct_C import construct_C

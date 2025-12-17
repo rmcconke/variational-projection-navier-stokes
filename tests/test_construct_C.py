@@ -10,7 +10,8 @@ import pytest
 sys.path.insert(0, '../src')
 from grid_setup import construct_grid
 from construct_C import construct_C
-
+import jax
+jax.config.update("jax_enable_x64", True)
 
 class TestConstructC:
     """Tests for construct_C function."""
@@ -47,7 +48,7 @@ class TestConstructC:
         C = construct_C(grid, U, rho=1.0, nu=0.0, U_lid=1.0)
         
         # Interior points should have C=0 (uniform flow, no viscosity)
-        for m in grid['indices']['interior']:
+        for m in grid.indices()['interior']:
             assert abs(C[2*m]) < 1e-10, f"C_u at interior {m} = {C[2*m]}"
             assert abs(C[2*m + 1]) < 1e-10, f"C_v at interior {m} = {C[2*m + 1]}"
     
@@ -67,7 +68,7 @@ class TestConstructC:
         C2 = construct_C(grid, U, rho, nu, U_lid=1.0)
         
         # Top boundary and top corners should differ
-        top_points = list(grid['indices']['top_b']) + [grid['indices']['corners'][2], grid['indices']['corners'][3]]
+        top_points = list(grid.indices()['top_b']) + [grid.indices()['corners'][2], grid.indices()['corners'][3]]
         
         differs = False
         for m in top_points:
@@ -81,19 +82,13 @@ class TestConstructC:
         """Test viscous term with a known velocity profile."""
         P, Q = 5, 5
         grid = construct_grid(P, Q)
-        dx = dy = 0.2
         rho = 1.0
         nu = 0.1
+        dx = grid.dx
+        dy = grid.dy
         dm = rho * dx * dy
         
-        # Set up a parabolic profile u = y^2 (only the center point)
-        # At interior point, laplacian(u) = d2u/dy2 = 2
         U = np.zeros(2 * P * Q)
-        
-        # For the center point m=12 (row 2, col 2 in 5x5)
-        # Set velocities to create u = y^2 pattern locally
-        # y positions: below=0.2, center=0.4, above=0.6
-        # u values: below=0.04, center=0.16, above=0.36
         
         # Center point (2,2) -> m = 2*5 + 2 = 12
         m_center = 12
@@ -102,20 +97,33 @@ class TestConstructC:
         m_left = m_center - 1   # 11
         m_right = m_center + 1  # 13
         
-        # Set u values for parabolic profile
-        U[2*m_center] = 0.16      # u at center
-        U[2*m_below] = 0.04       # u below
-        U[2*m_above] = 0.36       # u above
-        U[2*m_left] = 0.16        # u left (same y)
-        U[2*m_right] = 0.16       # u right (same y)
+        # Set u values such that d2u/dy2 = 2
+        # (u_above - 2*u_center + u_below) / dy^2 = 2
+        # Choose u_center = 1.0, and symmetric difference
+        # u_above - 2*u_center + u_below = 2 * dy^2
+        # Let u_below = u_center - delta, u_above = u_center + delta
+        # Then: (u_center + delta) - 2*u_center + (u_center - delta) = 0  # symmetric doesn't work
+        # Instead: u_above = u_center + dy^2, u_below = u_center - dy^2 doesn't work either
+        # 
+        # Simpler: set u_below = 0, u_center = dy^2, u_above = 4*dy^2
+        # Then: (4*dy^2 - 2*dy^2 + 0) / dy^2 = 2  ✓
+        
+        u_below = 0.0
+        u_center = dy**2
+        u_above = 4 * dy**2
+        
+        U[2*m_center] = u_center
+        U[2*m_below] = u_below
+        U[2*m_above] = u_above
+        U[2*m_left] = u_center   # same as center (no x-gradient)
+        U[2*m_right] = u_center  # same as center (no x-gradient)
         
         C = construct_C(grid, U, rho, nu, U_lid=0.0)
         
-        # Expected: d2u/dy2 = (0.36 - 2*0.16 + 0.04)/0.04 = 2
-        # d2u/dx2 = 0 (same values left/right)
+        # d2u/dy2 = (4*dy^2 - 2*dy^2 + 0) / dy^2 = 2
+        # d2u/dx2 = 0
         # alpha = nu * 2 = 0.2
-        # Convection A ≈ 0 (v=0, u differences cancel in x)
-        # C_u = dm * (A - alpha) = dm * (-0.2) = -0.008
+        # C_u = dm * (0 - alpha) = -dm * 0.2
         
         expected_C_u = -dm * nu * 2.0
         assert abs(C[2*m_center] - expected_C_u) < 1e-10, \
@@ -126,8 +134,8 @@ class TestConstructC:
         P, Q = 5, 5
         grid = construct_grid(P, Q)
         #dx = dy = 0.2
-        dx = grid['dx']
-        dy = grid['dy']
+        dx = grid.dx
+        dy = grid.dy
         rho = 1.0
         nu = 0.0  # No viscosity to isolate convection
         dm = rho * dx * dy
@@ -211,12 +219,12 @@ class TestConstructC:
         for _ in range(100):
             U = np.random.rand(2 * P * Q)  # random test velocity
             C_vectorized = construct_C(grid, U, rho, nu, U_lid)
-            indices = grid['indices']
-            indices['P'] = grid['P']
-            indices['Q'] = grid['Q']
-            indices['dx'] = grid['dx']
-            indices['dy'] = grid['dy']
-            C_original = construct_C_original(indices, grid['dx'], grid['dy'], U, rho, nu, U_lid)
+            indices = grid.indices()
+            indices['P'] = grid.P
+            indices['Q'] = grid.Q
+            indices['dx'] = grid.dx
+            indices['dy'] = grid.dy
+            C_original = construct_C_original(indices, grid.dx, grid.dy, U, rho, nu, U_lid)
             assert np.allclose(C_vectorized, C_original), "construct_C_vectorized and construct_C_original give different results"
 
 

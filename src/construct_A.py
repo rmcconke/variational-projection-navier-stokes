@@ -14,7 +14,6 @@ import jax.numpy as jnp
 
 # TODO: Check factor of 2 discrepancy with paper (Eq. 28 uses 1/(2dx), code uses 1/dx)
 
-
 def construct_A(grid):
     """
     Construct the discrete divergence operator matrix A.
@@ -29,29 +28,25 @@ def construct_A(grid):
     A : ndarray
         Divergence operator matrix of shape (P*Q, 2*P*Q)
     """
-    P = grid['P']
-    Q = grid['Q']
-    dx = grid['dx']
-    dy = grid['dy']
     
-    A = np.zeros((P * Q, 2 * P * Q))
+    A = np.zeros((grid.P * grid.Q, 2 * grid.P * grid.Q))
     
-    inv_dx = 1.0 / dx
-    inv_dy = 1.0 / dy
+    inv_dx = 1.0 / grid.dx
+    inv_dy = 1.0 / grid.dy
     
     # Corners
-    _fill_corners(A, grid['indices']['corners'], P, inv_dx, inv_dy)
+    _fill_corners(A, grid.indices()['corners'], grid.P, inv_dx, inv_dy)
     
     # Boundaries
-    _fill_left_boundary(A, grid['indices']['left_b'], P, inv_dx, inv_dy)
-    _fill_right_boundary(A, grid['indices']['right_b'], P, inv_dx, inv_dy)
-    _fill_bottom_boundary(A, grid['indices']['bottom_b'], P, inv_dx, inv_dy)
-    _fill_top_boundary(A, grid['indices']['top_b'], P, inv_dx, inv_dy)
+    _fill_left_boundary(A, grid.indices()['left_b'], grid.P, inv_dx, inv_dy)
+    _fill_right_boundary(A, grid.indices()['right_b'], grid.P, inv_dx, inv_dy)
+    _fill_bottom_boundary(A, grid.indices()['bottom_b'], grid.P, inv_dx, inv_dy)
+    _fill_top_boundary(A, grid.indices()['top_b'], grid.P, inv_dx, inv_dy)
     
     # Interior
-    _fill_interior(A, grid['indices']['interior'], P, inv_dx, inv_dy)
+    _fill_interior(A, grid.indices()['interior'], grid.P, inv_dx, inv_dy)
     
-    return A
+    return jnp.array(A)
 
 
 def _fill_corners(A, corners, P, inv_dx, inv_dy):

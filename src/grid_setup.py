@@ -10,19 +10,33 @@ Grid layout (0-based indexing):
 
 import numpy as np
 import jax.numpy as jnp
+from typing import NamedTuple
 
+
+class GridIndices(NamedTuple):
+    corners: np.ndarray
+    left_b: np.ndarray
+    right_b: np.ndarray
+    bottom_b: np.ndarray
+    top_b: np.ndarray
+    interior: np.ndarray
+
+class Grid(NamedTuple):
+    P: int
+    Q: int
+    dx: float
+    dy: float
+    W: float=1.0
+    H: float=1.0
+
+    def indices(self):
+        return create_grid_indices(self.P, self.Q)
 
 def construct_grid(P, Q, W=1.0, H=1.0):
     dx = W / (P + 1)
     dy = H / (Q + 1)
-    grid_indices = create_grid_indices(P, Q)
-    return {
-        'P': P,
-        'Q': Q,
-        'dx': dx,
-        'dy': dy,
-        'indices': grid_indices 
-        }
+    return Grid(P=P, Q=Q, dx=dx, dy=dy, W=W, H=H)
+
 
 def create_grid_indices(P, Q):
     """

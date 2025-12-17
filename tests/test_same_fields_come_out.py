@@ -44,6 +44,7 @@ def test_same_fields_come_out():
         U = U + dt * U_dot
 
     assert np.allclose(U, U_ref)
+    print(f"Example fields: U = {U[:10]}, U_ref = {U_ref[:10]}")
 
 if __name__ == '__main__':
     pytest.main([__file__, "-v"])

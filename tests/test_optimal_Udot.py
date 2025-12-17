@@ -14,6 +14,8 @@ from optimal_Udot import (
     compute_optimal_Udot,
     compute_M_neg_sqrt
 )
+import jax
+jax.config.update("jax_enable_x64", True)
 
 
 class TestMNegSqrt:
@@ -27,7 +29,7 @@ class TestMNegSqrt:
     def test_value(self):
         """Test M_neg_sqrt has correct value."""
         rho = 1000.0
-        dm = rho * self.grid['dx'] * self.grid['dy']
+        dm = rho * self.grid.dx * self.grid.dy
         expected = dm ** (-0.5)
         
         M_neg_sqrt = compute_M_neg_sqrt(self.grid, rho=rho)
@@ -51,7 +53,7 @@ class TestProjectionMatrices:
         
         P, N = compute_projection_matrices(A, M_neg_sqrt)
         
-        n_dof = 2 * self.grid['P'] * self.grid['Q']
+        n_dof = 2 * self.grid.P * self.grid.Q
         assert P.shape == (n_dof, n_dof)
         assert N.shape == (n_dof, n_dof)
     
@@ -82,7 +84,7 @@ class TestProjectionMatrices:
         
         P, N = compute_projection_matrices(A, M_neg_sqrt,sparse=False)
         
-        n_dof = 2 * self.grid['P'] * self.grid['Q']
+        n_dof = 2 * self.grid.P * self.grid.Q
         assert np.allclose(P + N, np.eye(n_dof), atol=1e-10), "P + N should equal I"
     
     def test_P_N_orthogonal(self):
@@ -124,11 +126,10 @@ class TestOptimalUdot:
         M_neg_sqrt = compute_M_neg_sqrt(self.grid, rho=1.0)
         P, N = compute_projection_matrices(A, M_neg_sqrt)
         
-        C = np.random.rand(2 * self.grid['P'] * self.grid['Q'])
+        C = np.random.rand(2 * self.grid.P * self.grid.Q)
         U_dot, S_star = compute_optimal_Udot(M_neg_sqrt, C, P, N)
         
-        assert U_dot.shape == (2 * self.grid['P'] * self.grid['Q'],)
-        assert isinstance(S_star, (float, np.floating))
+        assert U_dot.shape == (2 * self.grid.P * self.grid.Q,)
     
     def test_zero_C_gives_zero_Udot(self):
         """Test that C=0 gives U_dot=0."""
@@ -136,7 +137,7 @@ class TestOptimalUdot:
         M_neg_sqrt = compute_M_neg_sqrt(self.grid, rho=1.0)
         P, N = compute_projection_matrices(A, M_neg_sqrt)
         
-        C = np.zeros(2 * self.grid['P'] * self.grid['Q'])
+        C = np.zeros(2 * self.grid.P * self.grid.Q)
         U_dot, S_star = compute_optimal_Udot(M_neg_sqrt, C, P, N)
         
         assert np.allclose(U_dot, 0.0)
@@ -150,7 +151,7 @@ class TestOptimalUdot:
         
         # Test with random C vectors
         for _ in range(10):
-            C = np.random.randn(2 * self.grid['P'] * self.grid['Q'])
+            C = np.random.randn(2 * self.grid.P * self.grid.Q)
             U_dot, S_star = compute_optimal_Udot(M_neg_sqrt, C, P, N)
             assert S_star >= -1e-10, f"S_star should be non-negative, got {S_star}"
     
@@ -160,7 +161,7 @@ class TestOptimalUdot:
         M_neg_sqrt = compute_M_neg_sqrt(self.grid, rho=1.0)
         P, N = compute_projection_matrices(A, M_neg_sqrt)
         
-        C = np.random.randn(2 * self.grid['P'] * self.grid['Q'])
+        C = np.random.randn(2 * self.grid.P * self.grid.Q)
         U_dot, S_star = compute_optimal_Udot(M_neg_sqrt, C, P, N)
         
         # A @ U_dot should be approximately zero
