@@ -1,12 +1,13 @@
+import sys
+sys.path.insert(0, '../src')
+import config  # Must be first!
+import jax
+
 import numpy as np
 import jax.numpy as jnp
 from jax import jit, lax
 import time
-import sys
-sys.path.insert(0, '../src')
 
-import jax
-jax.config.update("jax_enable_x64", True)
 
 from grid_setup import construct_grid
 from construct_A import construct_A
@@ -38,8 +39,9 @@ def test_jax_vs_numpy():
     Note: this is with FP64 JAX, not FP32.
     The numpy implementation here is from the last main branch that only used numpy.
     It is vectorized, and uses sparse matrix multiplication.
-    I ran this test in a loop 10x:
+    I ran this test in a loop 10x, both float64, both on CPU
     Mean speedup: 3.59 ± 0.63x
+    The GPU speedup is more like 40x. Zoom!
     TODO: When I have a more concrete/consistent API for running the simulations, this will need to be updated.
     """
     # ----------------------
@@ -104,7 +106,7 @@ def test_jax_vs_numpy():
 
     assert elapsed_time_jax < elapsed_time_numpy, "JAX should be faster than NumPy"
     assert np.allclose(U_jax, U_numpy), "Results should match"
-    return elapsed_time_numpy / elapsed_time_jax # return speedup
+    #return elapsed_time_numpy / elapsed_time_jax # return speedup
 
 
 if __name__ == "__main__":

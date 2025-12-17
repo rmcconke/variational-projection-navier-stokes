@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, '../src')
 
+import config 
 from grid_setup import construct_grid
 from construct_A import construct_A
 from construct_C import construct_C

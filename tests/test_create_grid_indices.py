@@ -1,12 +1,13 @@
 """
 Tests for grid_setup module.
 """
-
 import sys
+sys.path.insert(0, '../src')
+import config 
+
 import numpy as np
 import pytest
 
-sys.path.insert(0, '../src')
 from grid_setup import create_grid_indices
 
 

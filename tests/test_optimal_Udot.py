@@ -1,12 +1,12 @@
 """
 Tests for optimal_Udot module.
 """
-
 import sys
+sys.path.insert(0, '../src')
+import config
 import numpy as np
 import pytest
 
-sys.path.insert(0, '../src')
 from grid_setup import construct_grid
 from construct_A import construct_A
 from optimal_Udot import (
@@ -14,8 +14,6 @@ from optimal_Udot import (
     compute_optimal_Udot,
     compute_M_neg_sqrt
 )
-import jax
-jax.config.update("jax_enable_x64", True)
 
 
 class TestMNegSqrt:

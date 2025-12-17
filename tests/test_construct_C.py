@@ -1,17 +1,15 @@
 """
 Tests for construct_C module.
 """
-
 import sys
+sys.path.insert(0, '../src')
+import config
 import numpy as np
 import pytest
 
 
-sys.path.insert(0, '../src')
 from grid_setup import construct_grid
 from construct_C import construct_C
-import jax
-jax.config.update("jax_enable_x64", True)
 
 class TestConstructC:
     """Tests for construct_C function."""

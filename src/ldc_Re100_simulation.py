@@ -1,8 +1,7 @@
+import config  # Must be first!
 import jax.numpy as jnp
 from jax import jit, lax
 import jax
-
-#jax.config.update("jax_enable_x64", True)
 
 from grid_setup import construct_grid
 from construct_A import construct_A
@@ -16,7 +15,7 @@ U_lid = 0.0180036 * 5
 nu = mu / rho
 
 n_steps = 100000000
-CFL_max = 0.3
+CFL_max = 0.1
 conv_tol = 1e-5
 log_every = 100  # Controls lax.scan block size
 
